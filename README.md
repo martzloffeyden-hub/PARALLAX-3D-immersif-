@@ -35,7 +35,8 @@ Aucune installation n'est nécessaire : l'application complète tient dans **un 
    puis sur **« Commencer »**.
 
 **Alternative** : faites glisser `dist/PARALLAX.html` dans une fenêtre de Chrome, ou clic droit →
-*Ouvrir avec* → *Google Chrome*. Microsoft Edge (moteur Chromium) fonctionne aussi.
+*Ouvrir avec* → *Google Chrome*. Microsoft Edge repose sur le même moteur et devrait se comporter
+de la même façon (non testé).
 
 > Windows peut afficher un avertissement SmartScreen pour le fichier `.bat` (fichier téléchargé).
 > Il ne fait qu'ouvrir `dist\PARALLAX.html` dans Chrome ; vous pouvez aussi ouvrir le fichier HTML
@@ -113,7 +114,7 @@ vous ramène simplement au dernier sol sûr. La progression est **sauvegardée p
 | Ombres | 2048 px, douces | 2048 px, douces | 1024 px |
 | Bloom | 6 niveaux | 5 niveaux | 4 niveaux |
 | Reflets de l'eau (III) | ½ résolution | 35 % | 25 % |
-| Portails | 60 % | 50 % | 40 % |
+| Portails (seule la zone du disque est calculée) | 80 % | 60 % | 45 % |
 | Particules / éclats | 100 % | 70 % | 45 % |
 | Relief des pierres | oui | oui | non (au prochain chapitre) |
 | Aberration chromatique | oui | oui | non |

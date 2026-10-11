@@ -152,26 +152,6 @@ export class TitleStage extends Stage {
     this.dust.frustumCulled = false;
     this.root.add(this.dust);
 
-    // --- Monolithes lointains (silhouettes)
-    const monoGeo = new RoundedBoxGeometry(1, 1, 1, 1, 0.02);
-    const monoMat = extendSurface(new THREE.MeshStandardMaterial({ color: 0x3a332d, roughness: 0.8 }), {
-      atmosphere: this.atmosphere,
-      textures: ctx.textures,
-      stoneScale: 0.2,
-      variation: 0.1,
-    });
-    const monos: [number, number, number, number, number, number][] = [
-      [-240, -60, -520, 18, 210, 18],
-      [260, -80, -600, 26, 240, 26],
-    ];
-    for (const [mx, my, mz, w, h, d] of monos) {
-      const mm = new THREE.Mesh(monoGeo, monoMat);
-      mm.position.set(mx, my + h / 2, mz);
-      mm.scale.set(w, h, d);
-      mm.rotation.y = rng.next();
-      this.root.add(mm);
-    }
-
     // --- Lumières
     const key = new THREE.DirectionalLight(hdr(0xffd2a8, 1), 4.2);
     key.position.set(-12, 14, 30);

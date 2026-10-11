@@ -171,12 +171,61 @@ export class Portal {
       vc.projectionMatrix.copy(pm);
       vc.projectionMatrixInverse.copy(pm).invert();
     }
+    // Ne calculer que les pixels couverts par le disque (boîte englobante à l'écran).
+    this.updateScissor(camera);
     const prev = renderer.getRenderTarget();
     renderer.setRenderTarget(this.target);
     renderer.setClearColor(0x000000, 1);
     renderer.clear(true, true, false);
     renderer.render(destScene, vc);
     renderer.setRenderTarget(prev);
+  }
+
+  private readonly corners = [new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3()];
+
+  private updateScissor(camera: THREE.PerspectiveCamera): void {
+    const t = this.target;
+    const r = this.radius * 1.08;
+    let x0 = 1;
+    let y0 = 1;
+    let x1 = -1;
+    let y1 = -1;
+    let behind = false;
+    const sgn = [
+      [-1, -1],
+      [1, -1],
+      [1, 1],
+      [-1, 1],
+    ];
+    for (let i = 0; i < 4; i++) {
+      const c = this.corners[i].set(sgn[i][0] * r, sgn[i][1] * r, 0);
+      this.source.localToWorld(c);
+      // point derrière la caméra : on renonce à la découpe
+      _v.copy(c).applyMatrix4(camera.matrixWorldInverse);
+      if (_v.z > -camera.near) {
+        behind = true;
+        break;
+      }
+      c.project(camera);
+      x0 = Math.min(x0, c.x);
+      y0 = Math.min(y0, c.y);
+      x1 = Math.max(x1, c.x);
+      y1 = Math.max(y1, c.y);
+    }
+    if (behind) {
+      t.scissorTest = false;
+      return;
+    }
+    x0 = Math.max(-1, x0);
+    y0 = Math.max(-1, y0);
+    x1 = Math.min(1, x1);
+    y1 = Math.min(1, y1);
+    const px = Math.floor(((x0 + 1) / 2) * t.width) - 2;
+    const py = Math.floor(((y0 + 1) / 2) * t.height) - 2;
+    const pw = Math.ceil(((x1 - x0) / 2) * t.width) + 4;
+    const ph = Math.ceil(((y1 - y0) / 2) * t.height) + 4;
+    t.scissor.set(Math.max(0, px), Math.max(0, py), Math.max(1, pw), Math.max(1, ph));
+    t.scissorTest = true;
   }
 
   /**
