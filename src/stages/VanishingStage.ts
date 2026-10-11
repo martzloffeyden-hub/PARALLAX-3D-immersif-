@@ -95,13 +95,13 @@ export class VanishingStage extends Stage {
     };
     this.dawnP = {
       sunDir: new THREE.Vector3(0, 0.004, -1).normalize(),
-      sunColor: hdr(0xffb46a, 3.2),
-      zenith: hdr(0x1d3a6e, 0.45),
-      mid: hdr(0x8a8fb8, 0.7),
-      horizon: hdr(0xffc48a, 1.4),
-      ground: hdr(0x2a2030, 0.4),
-      shape: new THREE.Vector4(0.45, 2.0, 30, 0.45),
-      sunGlow: new THREE.Vector4(0.45, 4, 2.2, 120),
+      sunColor: hdr(0xffb46a, 2.4),
+      zenith: hdr(0x1d3a6e, 0.4),
+      mid: hdr(0x7a82b0, 0.55),
+      horizon: hdr(0xffbf8a, 0.95),
+      ground: hdr(0x2a2030, 0.35),
+      shape: new THREE.Vector4(0.45, 2.0, 30, 0.35),
+      sunGlow: new THREE.Vector4(0.22, 4, 1.1, 140),
       fog: new THREE.Vector4(0.0018, 0.06, WATER_Y, 0.92),
       fogTint: new THREE.Color(1, 1, 1),
       fogSun: 0.5,
@@ -431,7 +431,7 @@ export class VanishingStage extends Stage {
       this.sun.intensity = lerp(sunI0, 2.6, e);
       this.sun.color.lerpColors(hdr(0x9fb4e8, 1), hdr(0xffc890, 1), e);
       this.scene.environmentIntensity = lerp(0.35, 1.0, e);
-      g.exposure = lerp(ex0, 1.0, e);
+      g.exposure = lerp(ex0, 0.92, e);
       this.ringMat.emissive.setRGB(1, 0.62, 0.34).multiplyScalar(0.2 + 0.25 * e);
       this.ringMat.emissiveIntensity = 1;
       (this.water.material.uniforms.uDeep.value as THREE.Color).lerpColors(hdr(0x02040a, 0.4), hdr(0x1a1824, 0.5), e);
@@ -448,6 +448,11 @@ export class VanishingStage extends Stage {
       host.finish();
     });
     this.play(seq);
+  }
+
+  applyQuality(q: import('../render/Quality').QualityPreset): void {
+    super.applyQuality(q);
+    this.water.scale = Math.max(0.25, q.reflectionScale);
   }
 
   preRender(graphics: Graphics, camera: THREE.PerspectiveCamera, w?: number, h?: number): void {

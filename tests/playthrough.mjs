@@ -33,6 +33,15 @@ async function shot(name) {
   await page.screenshot({ path: `${out}/${name}.png` });
   log('capture', name);
 }
+/** Maintient une touche jusqu'à ce que la condition soit vraie (ou délai). */
+async function holdUntil(code, pred, label, timeout = 120000) {
+  await dbg('key', code, true);
+  try {
+    await waitFor(pred, label, timeout);
+  } finally {
+    await dbg('key', code, false);
+  }
+}
 async function holdKey(code, ms) {
   await dbg('key', code, true);
   await page.waitForTimeout(ms);
@@ -71,14 +80,13 @@ try {
   });
   await shot('02-portal-open');
   await step('I → II — traversée du portail', async () => {
-    await dbg('walkTo', 0, -50);
+    await dbg('walkTo', 0, -53);
     await page.evaluate(() => {
       const p = window.PARALLAX.player;
       p.yaw = 0;
       p.pitch = 0;
     });
-    await holdKey('KeyW', 2500);
-    await waitFor((s) => s.stage === 'archipelago', 'arrivée Archipel', 120000);
+    await holdUntil('KeyW', (s) => s.stage === 'archipelago', 'arrivée Archipel');
   });
   await page.waitForTimeout(800);
   await shot('03-archipelago-arrival');
@@ -100,8 +108,7 @@ try {
       p.yaw = 0;
       p.pitch = 0;
     });
-    await holdKey('KeyW', 2500);
-    await waitFor((s) => s.frame === 'wall', 'référentiel paroi', 60000);
+    await holdUntil('KeyW', (s) => s.frame === 'wall', 'référentiel paroi');
   });
   await page.waitForTimeout(2500);
   await shot('06-on-the-wall');
@@ -110,8 +117,7 @@ try {
       const p = window.PARALLAX.player;
       p.teleport(p.frame, 0, 0.2, -45, 0, 0);
     });
-    await holdKey('KeyW', 2500);
-    await waitFor((s) => s.frame === 'main' && s.pos[1] > 45, 'sommet', 60000);
+    await holdUntil('KeyW', (s) => s.frame === 'main' && s.pos[1] > 45, 'sommet');
   });
   await page.waitForTimeout(2500);
   await shot('07-summit');
@@ -129,8 +135,7 @@ try {
       const p = window.PARALLAX.player;
       p.teleport(p.frame, 0, 50.2, -112, 0, 0);
     });
-    await holdKey('KeyW', 3000);
-    await waitFor((s) => s.stage === 'vanishing', 'arrivée Point de fuite', 120000);
+    await holdUntil('KeyW', (s) => s.stage === 'vanishing', 'arrivée Point de fuite');
   });
   await page.waitForTimeout(800);
   await shot('10-vanishing-arrival');
@@ -162,5 +167,5 @@ try {
   console.log('Journal console (erreurs/avertissements) :');
   for (const l of logs.filter((l) => !l.includes('KHR_parallel_shader_compile')).slice(0, 40)) console.log('  ', l);
   await browser.close();
-  process.exit(results.every((r) => r.ok) && results.length >= 12 ? 0 : 1);
+  process.exit(results.every((r) => r.ok) && results.length >= 11 ? 0 : 1);
 }

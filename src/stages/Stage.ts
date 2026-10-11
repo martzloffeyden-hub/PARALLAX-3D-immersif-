@@ -189,6 +189,20 @@ export abstract class Stage {
     this.sun = sun;
   }
 
+  /** Applique un nouveau profil graphique sans reconstruire la scène. */
+  applyQuality(q: QualityPreset): void {
+    if (this.sun && this.sun.castShadow) {
+      const sh = this.sun.shadow;
+      if (sh.mapSize.x !== q.shadowMapSize) {
+        sh.mapSize.set(q.shadowMapSize, q.shadowMapSize);
+        sh.map?.dispose();
+        (sh as unknown as { map: THREE.WebGLRenderTarget | null }).map = null;
+      }
+      sh.radius = q.shadowRadius;
+      this.shadowDirty = true;
+    }
+  }
+
   dispose(): void {
     this.scene.traverse((o) => {
       const m = o as THREE.Mesh;

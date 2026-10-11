@@ -250,7 +250,11 @@ input[type='range']:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px 
 .keys .d em { color: var(--bone); }
 
 /* ------------------------------------------------------------ Générique */
-#credits { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 10px; }
+#credits {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 10px;
+  background: radial-gradient(ellipse 70% 60% at 50% 48%, rgba(12, 9, 8, 0.58), rgba(12, 9, 8, 0.2) 70%, rgba(12, 9, 8, 0.05));
+  text-shadow: 0 2px 22px rgba(0, 0, 0, 0.45);
+}
 #credits .t { font-weight: 300; font-size: clamp(54px, 8vw, 120px); letter-spacing: 0.32em; margin-right: -0.32em; line-height: 1; }
 #credits .s { font-style: italic; font-weight: 300; font-size: clamp(18px, 1.7vw, 24px); color: var(--bone-2); }
 #credits .roll { margin-top: 34px; color: var(--bone-3); line-height: 2.4; }

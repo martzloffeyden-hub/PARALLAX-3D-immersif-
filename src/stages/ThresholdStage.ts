@@ -218,7 +218,7 @@ export class ThresholdStage extends Stage {
 
     // --- Grande Porte (nord)
     b.archWall({ x: 0, y: 0, z: -58, w: 40, h: 34, d: 3.6, openings: [{ cx: 0, width: 14, spring: 13 }], mat: 'stone' });
-    b.box({ x: 0, y: 0, z: -58, w: 44, h: 0.7, d: 7, mat: 'stone', r: 0.05 });
+    b.box({ x: 0, y: 0, z: -58, w: 44, h: 0.32, d: 7, mat: 'stone', r: 0.05 });
     b.box({ x: 0, y: 34, z: -58, w: 41, h: 1.2, d: 4.6, mat: 'stone', r: 0.08, collide: false });
 
     // --- Arcades latérales (perspective à la De Chirico)
@@ -552,7 +552,9 @@ export class ThresholdStage extends Stage {
     dest.tickAmbient(1 / 60, this.portal.vcam);
     const r = graphics.renderer;
     const sm = r.shadowMap.needsUpdate;
-    r.shadowMap.needsUpdate = false;
+    // La scène vue par le portail ne recalcule ses ombres que si elles ont été invalidées.
+    r.shadowMap.needsUpdate = dest.shadowDirty;
+    dest.shadowDirty = false;
     this.portal.setResolution(graphics.width, graphics.height, this.ctx.quality.portalScale);
     this.portal.render(r, camera, dest.scene, this.time, graphics.width, graphics.height);
     r.shadowMap.needsUpdate = sm;

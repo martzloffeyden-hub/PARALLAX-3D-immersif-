@@ -3,6 +3,7 @@ import { Graphics } from '../render/Graphics';
 import { createProceduralTextures, type ProceduralTextureSet } from '../render/ProceduralTextures';
 import { detectQuality } from '../render/Quality';
 import { lerpGrade } from '../render/PostFX';
+import { surfaceDetail } from '../render/Surface';
 import { Settings, Progress, type ProgressData } from './Settings';
 import { Director, makePose, type CamPose } from './Director';
 import { Player } from '../player/Player';
@@ -271,7 +272,11 @@ export class App {
       this.player.reducedMotion = d.reducedMotion;
     }
     if (this.director) this.director.reducedMotion = d.reducedMotion;
-    if (this.ctx) this.ctx.quality = g.preset;
+    surfaceDetail.bump = d.quality !== 'performance';
+    if (this.ctx && this.ctx.quality !== g.preset) {
+      this.ctx.quality = g.preset;
+      for (const st of Object.values(this.stages)) st.applyQuality(g.preset);
+    }
   }
 
   // ================================================================ Parcours
@@ -291,6 +296,7 @@ export class App {
   }
 
   private toTitle(): void {
+    this.audio.resume();
     this.ui.showPause(false);
     this.ui.showHUD(false);
     this.ui.showCredits(false);
@@ -313,6 +319,7 @@ export class App {
   startChapter(n: number, fresh: boolean): void {
     if (this.mode === 'transition') return;
     this.audio.init().then(() => this.applySettings());
+    this.audio.resume();
     this.input.requestLock();
     this.ui.showTitle(false);
     this.ui.showCredits(false);
@@ -329,7 +336,8 @@ export class App {
       this.audio.inst?.riser(this.audio.now(), 2.4, 0.07, 200, 5000);
     }
     this.fadeTo(1, fromTitle ? 2.4 : 1.0, () => {
-      this.rebuildStage(id);
+      // Ce chapitre et les suivants repartent de zéro.
+      for (let k = STAGE_ORDER.indexOf(id); k < STAGE_ORDER.length; k++) this.rebuildStage(STAGE_ORDER[k]);
       this.enterStage(id, true);
     }, fromTitle ? 0xf4e6cf : 0x000000);
   }
@@ -339,9 +347,10 @@ export class App {
     if (!STAGE_ORDER.includes(id)) return this.toTitle();
     this.ui.showPause(false);
     this.input.requestLock();
+    this.audio.resume();
     this.mode = 'transition';
     this.fadeTo(1, 0.8, () => {
-      this.rebuildStage(id);
+      for (let k = STAGE_ORDER.indexOf(id); k < STAGE_ORDER.length; k++) this.rebuildStage(STAGE_ORDER[k]);
       this.enterStage(id, true);
     });
   }
@@ -385,10 +394,16 @@ export class App {
     this.ui.showHUD(true);
     this.lockHold = 0;
     if (card && st.card) window.setTimeout(() => this.ui.chapterCard(...st.card!), 900);
+    if (st.chapter === 1) {
+      window.setTimeout(() => this.ui.showControlsCard(true), 7000);
+      window.setTimeout(() => this.ui.showControlsCard(false), 21000);
+    }
     this.fadeTo(0, 2.6, () => {
       this.player.frozen = false;
       this.mode = 'play';
       st.begin();
+      // Pointeur libéré pendant le fondu : on propose de reprendre plutôt que de laisser le joueur sans regard.
+      if (!this.input.pointerLocked && !this.input.lockFailed && !this.params.has('dev')) this.pause();
     });
     this.mode = 'transition';
     // Le joueur peut regarder pendant le fondu d'entrée.
@@ -410,6 +425,7 @@ export class App {
   private advanceSeamless(next: string, place: (p: Player) => void): void {
     const st = this.stages[next];
     if (!st) return;
+    this.ui.clearHint();
     this.switchStage(next);
     st.viaPortal = true;
     place(this.player);
@@ -468,6 +484,8 @@ export class App {
     const roman = ['', 'I', 'II', 'III'][chapter] ?? '';
     this.ui.showPause(true, chapter ? `Chapitre ${roman} — ${this.stage.card?.[1] ?? ''}` : '');
     this.input.reset();
+    // Le menu doit pouvoir recevoir les clics (pause par la touche P ou la manette).
+    this.input.exitLock();
   }
 
   private resume(): void {

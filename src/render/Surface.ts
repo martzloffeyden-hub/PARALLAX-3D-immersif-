@@ -2,6 +2,9 @@ import * as THREE from 'three';
 import { ATMOSPHERE_PARS, type Atmosphere } from './Atmosphere';
 import type { ProceduralTextureSet } from './ProceduralTextures';
 
+/** Niveau de détail des surfaces (fixé par le profil graphique avant la construction des scènes). */
+export const surfaceDetail = { bump: true };
+
 /** Calque utilisé pour les objets qui occultent la peinture anamorphique. */
 export const LAYER_OCCLUDER = 1;
 
@@ -242,7 +245,7 @@ const FRAG_ROUGH = /* glsl */ `
 `;
 
 const FRAG_NORMAL = /* glsl */ `
-#ifdef USE_STONE
+#ifdef USE_STONE_BUMP
   {
     vec2 dSTdx = dFdx(vStoneUv);
     vec2 dSTdy = dFdy(vStoneUv);
@@ -301,7 +304,10 @@ gl_FragColor.rgb = applyAtmosphere(gl_FragColor.rgb, vWPos, cameraPosition);
  */
 export function extendSurface<T extends THREE.MeshStandardMaterial>(mat: T, o: SurfaceOptions): T {
   const defines: Record<string, string> = {};
-  if (o.textures && (o.variation ?? 0.18) > 0) defines.USE_STONE = '';
+  if (o.textures && (o.variation ?? 0.18) > 0) {
+    defines.USE_STONE = '';
+    if (surfaceDetail.bump && (o.bump ?? 0.012) > 0) defines.USE_STONE_BUMP = '';
+  }
   if (o.slabs) defines.USE_SLABS = '';
   if (o.paint) defines.USE_PAINT = '';
   if (o.contactAO) defines.USE_CONTACT_AO = '';

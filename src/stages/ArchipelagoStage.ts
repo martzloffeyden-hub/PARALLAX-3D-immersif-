@@ -25,6 +25,8 @@ const PORTAL_R = GATE_PORTAL_R;
 const ARRIVAL = new THREE.Vector3(0, PORTAL_R - 1.2, 9);
 const SUMMIT_Y = 50;
 const NIGHT_GATE = new THREE.Vector3(0, SUMMIT_Y + PORTAL_R - 1.2, -122);
+/** Point de vue de la Porte de la Nuit : un angle du sommet, hors de l'axe d'arrivée. */
+const GATE_VIEW = new THREE.Vector3(7.6, SUMMIT_Y, -86);
 
 type Phase = 'bridge' | 'bridgeEvent' | 'island' | 'summit' | 'gateEvent' | 'night' | 'gone';
 
@@ -192,7 +194,7 @@ export class ArchipelagoStage extends Stage {
     lantern(-12, 0, 8);
     lantern(12, 0, 8);
     // seuil de l'anneau d'arrivée
-    b.box({ x: 0, y: 0, z: 9, w: 9, h: 0.12, d: 2.2, mat: 'stone', r: 0.03 });
+    b.box({ x: 0, y: 0, z: 9, w: 9, h: 0.32, d: 2.6, mat: 'stone', r: 0.03 });
 
     // --- Île B (le monolithe)
     island(0, -58.5, 30, 27);
@@ -206,12 +208,12 @@ export class ArchipelagoStage extends Stage {
     b.box({ x: 0, y: 0, z: -56, w: 0.24, h: 0.03, d: 28, mat: 'verm', collide: false, r: 0.01 });
     b.box({ x: 0, y: 0, z: -71.2, w: 7, h: 0.035, d: 1.6, mat: 'verm', collide: false, r: 0.01 });
     // sommet : disque de bronze du dernier point de vue, quelques volumes
-    b.custom(disc, new THREE.Matrix4().makeTranslation(0, SUMMIT_Y + 0.005, -80), 'bronze', 1);
+    b.custom(disc, new THREE.Matrix4().makeTranslation(GATE_VIEW.x, SUMMIT_Y + 0.005, GATE_VIEW.z), 'bronze', 1);
     disc.dispose();
     b.box({ x: -7, y: SUMMIT_Y, z: -75, w: 2.4, h: 1.2, d: 2.4, mat: 'stone', r: 0.05 });
-    b.box({ x: 6.5, y: SUMMIT_Y, z: -85, w: 3, h: 0.8, d: 1.6, mat: 'stone', r: 0.05 });
-    lantern(-8.5, SUMMIT_Y, -86.5, 1.6);
-    lantern(8.5, SUMMIT_Y, -86.5, 1.6);
+    b.box({ x: -6.5, y: SUMMIT_Y, z: -84, w: 3, h: 0.8, d: 1.6, mat: 'stone', r: 0.05 });
+    lantern(-8.8, SUMMIT_Y, -74, 1.6);
+    lantern(8.8, SUMMIT_Y, -74, 1.6);
 
     // --- Lointains : architecture impossible
     b.box({ x: -260, y: -60, z: -420, w: 60, h: 260, d: 60, mat: 'under', collide: false, r: 0.5 });
@@ -325,7 +327,7 @@ export class ArchipelagoStage extends Stage {
     this.anamorphoses.push(this.bridgeAnam);
 
     // --- Figure 2 : la Porte de la Nuit (vue depuis le sommet)
-    const gateEye = new THREE.Vector3(0, SUMMIT_Y + 1.62, -80);
+    const gateEye = GATE_VIEW.clone().setY(SUMMIT_Y + 1.62);
     const gspecs: PieceSpec[] = [];
     const gz = NIGHT_GATE.z;
     const gy = SUMMIT_Y;
@@ -348,17 +350,17 @@ export class ArchipelagoStage extends Stage {
       { eye: gateEye, kMin: 0.45, kMax: 2.3, seed: 31, wobble: 0.8, reject },
     );
     this.root.add(this.gate.group);
-    this.gateAnam = new Anamorphosis({ name: 'porte', frame: this.mainFrame, foot: new THREE.Vector3(0, SUMMIT_Y, -80), focus: new THREE.Vector3(0, gy + 10, gz), sigma: 3.0, hearRadius: 45 });
+    this.gateAnam = new Anamorphosis({ name: 'porte', frame: this.mainFrame, foot: GATE_VIEW.clone(), focus: new THREE.Vector3(0, gy + 10, gz), sigma: 3.0, hearRadius: 45 });
     this.anamorphoses.push(this.gateAnam);
 
     // --- Pont de lumière (après la porte) : dalles qui montent des nuages
-    const nLB = 16;
+    const nLB = 18;
     this.lightBridge = new THREE.InstancedMesh(unitBox, stone, nLB);
     this.lightBridge.visible = false;
     this.lightBridge.castShadow = true;
     this.lightBridge.receiveShadow = true;
     this.root.add(this.lightBridge);
-    this.lightBridgeColliders.push(cs.addBox(0, SUMMIT_Y - 0.35, -104.5, 3.4, 0.7, 33, { enabled: false }));
+    this.lightBridgeColliders.push(cs.addBox(0, SUMMIT_Y - 0.35, -106.5, 3.4, 0.7, 37, { enabled: false }));
 
     // --- Anneau d'arrivée et portail retour (on aperçoit le Seuil)
     this.ring = new Emblem(atm, PORTAL_R, 0.47, 1, 0.01, PORTAL_R + 0.25, 0.1);
@@ -591,7 +593,7 @@ export class ArchipelagoStage extends Stage {
         host.hint('Au sommet, une dernière figure attend son point de vue.', 6);
       } else if (this.hintStep === 30 && t > 45 && this.gateAnam.distance > 2) {
         this.hintStep = 31;
-        host.hint('Placez-vous sur le disque de bronze et regardez vers le nord.', 7);
+        host.hint('Un disque de bronze, à l’angle nord-est du sommet, marque le point de vue.', 7);
       }
     } else if (this.phase === 'night') {
       if (this.hintStep < 40 && t > 30) {
@@ -689,7 +691,7 @@ export class ArchipelagoStage extends Stage {
     this.tuningGate?.resolve();
     this.linkPortal();
     this.shadowLive = true;
-    const eye = new THREE.Vector3(0, SUMMIT_Y + 1.62, -80);
+    const eye = GATE_VIEW.clone().setY(SUMMIT_Y + 1.62);
     const focus = new THREE.Vector3(0, SUMMIT_Y + 10, -122);
     const eyeQ = lookQuat(new THREE.Quaternion(), eye, focus);
     const wide = new THREE.Vector3(34, SUMMIT_Y + 16, -70);
@@ -779,8 +781,8 @@ export class ArchipelagoStage extends Stage {
     const sc = new THREE.Vector3(3.4, 0.7, 2.0);
     seq.at(gateDone + 1, () => (lb.visible = true));
     seq.span(gateDone + 1, gateDone + 7, (k) => {
-      for (let i = 0; i < 16; i++) {
-        const local = clamp((k * 16 - i * 0.6) / 4);
+      for (let i = 0; i < 18; i++) {
+        const local = clamp((k * 18 - i * 0.6) / 4);
         const e = ease.outCubic(local);
         const y = lerp(SUMMIT_Y - 60, SUMMIT_Y - 0.35, e);
         m4.compose(new THREE.Vector3(0, y, -89 - i * 2.0), qId, sc);
@@ -838,6 +840,8 @@ export class ArchipelagoStage extends Stage {
     if (this.backPortal.enabled) {
       const src = this.ctx.stage('threshold');
       if (src) {
+        r.shadowMap.needsUpdate = src.shadowDirty;
+        src.shadowDirty = false;
         this.backPortal.setResolution(graphics.width, graphics.height, scale);
         this.backPortal.render(r, camera, src.scene, this.time, graphics.width, graphics.height);
         this.backPortal.material.uniforms.uExposure.value = src.grade.exposure / this.grade.exposure;
@@ -848,6 +852,8 @@ export class ArchipelagoStage extends Stage {
     if (this.portal.enabled) {
       const dest = this.ctx.stage('vanishing');
       if (dest) {
+        r.shadowMap.needsUpdate = dest.shadowDirty;
+        dest.shadowDirty = false;
         dest.tickAmbient(1 / 60, this.portal.vcam);
         this.portal.setResolution(graphics.width, graphics.height, scale);
         this.portal.render(r, camera, dest.scene, this.time, graphics.width, graphics.height, (vc, tw, th) => dest.preRender(graphics, vc, tw, th));
