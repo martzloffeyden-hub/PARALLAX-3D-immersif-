@@ -8,6 +8,7 @@ import { Anamorphosis } from '../world/Anamorphosis';
 import { Emblem } from '../world/Emblem';
 import { Portal } from '../world/Portal';
 import { Motes, DustBursts } from '../world/Particles';
+import { Birds } from '../world/Birds';
 import { ColliderSet, type BoxCollider, type CylCollider } from '../player/Colliders';
 import type { TuningVoice, LoopHandle } from '../audio/AudioEngine';
 import { midi } from '../audio/AudioEngine';
@@ -43,6 +44,7 @@ export class ThresholdStage extends Stage {
   portal!: Portal;
   private motes!: Motes;
   private dust!: DustBursts;
+  private birds!: Birds;
   private tuning: TuningVoice | null = null;
   private hum: LoopHandle | null = null;
   private eye!: THREE.Vector3;
@@ -69,7 +71,7 @@ export class ThresholdStage extends Stage {
       zenith: hdr(0x2a5878, 0.42),
       mid: hdr(0x9fc4b8, 0.6),
       horizon: hdr(0xf1d9a8, 0.95),
-      ground: hdr(0x9c8468, 0.45),
+      ground: hdr(0xc2a888, 0.85),
       shape: new THREE.Vector4(0.42, 3.0, 22, 0.12),
       sunGlow: new THREE.Vector4(0.16, 4, 0.9, 260),
       fog: new THREE.Vector4(0.0018, 0.04, 0, 0.92),
@@ -98,17 +100,18 @@ export class ThresholdStage extends Stage {
     // --- Matériaux
     const atm = this.atmosphere;
     const tex = ctx.textures;
+    const clouds = { noise: tex.noise, scale: 0.0045, wind: new THREE.Vector2(0.0016, 0.0007), strength: 0.42 };
     const stone = extendSurface(
       new THREE.MeshStandardMaterial({ color: 0xd8c9b0, roughness: 0.86, metalness: 0, vertexColors: true }),
-      { atmosphere: atm, textures: tex, stoneScale: 0.42, variation: 0.16, bump: 0.01, roughVar: 0.22, paint: this.paint, contactAO: { y: 0, height: 1.6, strength: 0.45 } },
+      { atmosphere: atm, textures: tex, stoneScale: 0.42, variation: 0.16, bump: 0.01, roughVar: 0.22, paint: this.paint, contactAO: { y: 0, height: 1.6, strength: 0.45 }, cloudShadow: clouds, weathering: 1 },
     );
     const ochre = extendSurface(
       new THREE.MeshStandardMaterial({ color: 0xc98a5a, roughness: 0.9, metalness: 0, vertexColors: true }),
-      { atmosphere: atm, textures: tex, stoneScale: 0.3, variation: 0.2, bump: 0.008, roughVar: 0.15, contactAO: { y: 0, height: 2.0, strength: 0.4 } },
+      { atmosphere: atm, textures: tex, stoneScale: 0.3, variation: 0.2, bump: 0.008, roughVar: 0.15, contactAO: { y: 0, height: 2.0, strength: 0.4 }, cloudShadow: clouds, weathering: 1.2 },
     );
     const dark = extendSurface(
-      new THREE.MeshStandardMaterial({ color: 0x2a2624, roughness: 0.22, metalness: 0.0, vertexColors: true }),
-      { atmosphere: atm, textures: tex, stoneScale: 0.5, variation: 0.08, bump: 0.002, roughVar: 0.12 },
+      new THREE.MeshStandardMaterial({ color: 0x1c1a19, roughness: 0.12, metalness: 0.0, vertexColors: true }),
+      { atmosphere: atm, textures: tex, stoneScale: 0.5, variation: 0.06, bump: 0.0, roughVar: 0.06, cloudShadow: clouds },
     );
     const bronze = extendSurface(
       new THREE.MeshStandardMaterial({ color: 0xa47a4a, roughness: 0.32, metalness: 1.0, vertexColors: true }),
@@ -127,6 +130,7 @@ export class ThresholdStage extends Stage {
       slabs: { sx: 2.4, sz: 1.6, seam: 0.012, seamDark: 0.35, tileVar: 0.06 },
       paint: this.paint,
       topAO: this.topAO,
+      cloudShadow: clouds,
     });
 
     // --- Sol
@@ -197,8 +201,14 @@ export class ThresholdStage extends Stage {
     {
       const l = at(26, 6.5);
       element(2.2, 1.6, (eb) => eb.box({ x: l.x, y: 0, z: l.z, w: 3.2, h: 2.2, d: 1.4, rotY: l.face + 0.9, mat: 'stone', r: 0.05 }));
+      // Sphère d'obsidienne polie sur un socle : un objet métaphysique qui reflète le ciel.
       const k = at(16, -11.5);
-      element(3.4, 1.2, (eb) => eb.box({ x: k.x, y: 0, z: k.z, w: 2.4, h: 3.4, d: 2.4, rotY: 0.3, mat: 'dark', r: 0.05 }));
+      element(4.0, 1.6, (eb) => {
+        eb.box({ x: k.x, y: 0, z: k.z, w: 2.6, h: 0.9, d: 2.6, rotY: 0.3, mat: 'stone', r: 0.05 });
+        const sph = new THREE.SphereGeometry(1.45, 64, 40);
+        eb.custom(sph, new THREE.Matrix4().makeTranslation(k.x, 0.9 + 1.45, k.z), 'dark', 1);
+        sph.dispose();
+      });
     }
     W(30, 1.2, 14, 15, 1.0, -0.1);
     W(33, -11.5, 7, 12, 0.9, 0.5);
@@ -268,6 +278,8 @@ export class ThresholdStage extends Stage {
     this.scene.add(this.motes.points);
     this.dust = new DustBursts(atm, 900);
     this.scene.add(this.dust.points);
+    this.birds = new Birds(atm, 14, new THREE.Vector3(-10, 0, -40));
+    this.scene.add(this.birds.mesh);
 
     this.circle = new Anamorphosis({ name: 'cercle', frame: this.mainFrame, foot, focus, sigma: 3.2, hearRadius: 40 });
     this.anamorphoses.push(this.circle);
@@ -326,6 +338,7 @@ export class ThresholdStage extends Stage {
   tickAmbient(dt: number, camera: THREE.Camera): void {
     super.tickAmbient(dt, camera);
     this.emblem.update(this.time);
+    this.birds.update(this.time);
   }
 
   update(dt: number, camera: THREE.Camera): void {
@@ -569,5 +582,6 @@ export class ThresholdStage extends Stage {
     this.motes.dispose();
     this.dust.dispose();
     this.emblem.dispose();
+    this.birds.dispose();
   }
 }

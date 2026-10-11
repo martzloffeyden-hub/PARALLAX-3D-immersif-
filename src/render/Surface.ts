@@ -5,6 +5,9 @@ import type { ProceduralTextureSet } from './ProceduralTextures';
 /** Niveau de détail des surfaces (fixé par le profil graphique avant la construction des scènes). */
 export const surfaceDetail = { bump: true };
 
+/** Uniformes globaux partagés par tous les matériaux étendus (temps). */
+export const globalUniforms = { uTime: { value: 0 } };
+
 /** Calque utilisé pour les objets qui occultent la peinture anamorphique. */
 export const LAYER_OCCLUDER = 1;
 
@@ -108,6 +111,12 @@ export interface SurfaceOptions {
   contactAO?: { y: number; height: number; strength: number };
   /** Carte d'occlusion vue du dessus (ombre de contact au sol). */
   topAO?: TopDownAO;
+  /** Ombres de nuages qui glissent sur le sol et les murs. */
+  cloudShadow?: { noise: THREE.Texture; scale: number; wind: THREE.Vector2; strength: number };
+  /** Assises de pierre sur les parois verticales (hauteur d'assise, longueur de bloc). */
+  courses?: { h: number; l: number; dark: number };
+  /** Coulures et salissures verticales (0..1). */
+  weathering?: number;
 }
 
 const VERT_DECL = /* glsl */ `
@@ -195,6 +204,17 @@ float computePaintMask() {
 #ifdef USE_CONTACT_AO
 uniform vec3 uContactAO;
 #endif
+#ifdef USE_CLOUD_SHADOW
+uniform sampler2D tCloudNoise;
+uniform vec4 uCloudShadow; // échelle, vent x, vent z, intensité
+uniform float uTime;
+#endif
+#ifdef USE_COURSES
+uniform vec3 uCourses;
+#endif
+#ifdef USE_WEATHER
+uniform float uWeather;
+#endif
 #ifdef USE_TOP_AO
 uniform sampler2D uTopAO;
 uniform vec4 uTopAOBounds;
@@ -221,9 +241,35 @@ const FRAG_COLOR = /* glsl */ `
     vec2 fw = fwidth(sp) + 1e-5;
     vec2 jw = uSlabs.z / uSlabs.xy;
     vec2 e = smoothstep(0.5 - jw - fw, 0.5 - jw + fw * 0.5, fr);
-    slabSeam = max(e.x, e.y);
+    // joints uniquement sur les faces tournées vers le haut
+    slabSeam = max(e.x, e.y) * smoothstep(0.75, 0.95, normalize(vWNormal).y);
     slabRand = sHash12(cell + 17.0);
     diffuseColor.rgb *= (1.0 + (slabRand - 0.5) * uSlabVar) * (1.0 - slabSeam * uSlabs.w);
+  }
+#endif
+#ifdef USE_COURSES
+  {
+    vec3 wn = normalize(vWNormal);
+    float vert = 1.0 - abs(wn.y);
+    float along = abs(wn.x) > abs(wn.z) ? vWPos.z : vWPos.x;
+    vec2 cp = vec2(along / uCourses.y, vWPos.y / uCourses.x);
+    cp.x += 0.5 * step(1.0, mod(floor(cp.y), 2.0));
+    vec2 fr = abs(fract(cp) - 0.5);
+    vec2 fw = fwidth(cp) + 1e-5;
+    vec2 jw = vec2(0.018 / uCourses.y, 0.018 / uCourses.x);
+    vec2 e = smoothstep(0.5 - jw - fw, 0.5 - jw + fw * 0.5, fr);
+    float joint = max(e.x, e.y) * vert;
+    float blockVar = sHash12(floor(cp) + 3.0);
+    diffuseColor.rgb *= (1.0 - joint * uCourses.z) * (1.0 + (blockVar - 0.5) * 0.08 * vert);
+  }
+#endif
+#ifdef USE_WEATHER
+  {
+    float vert = 1.0 - abs(normalize(vWNormal).y);
+    // coulures larges et douces (canal basse fréquence), salissure au pied des murs
+    float streak = texture2D(tStone, vec2(vStoneUv.x * 0.32, vWPos.y * 0.012 + vStoneUv.x * 0.05)).b;
+    float stain = smoothstep(0.45, 0.85, streak) * smoothstep(0.0, 4.0, vWPos.y + 1.0);
+    diffuseColor.rgb *= 1.0 - uWeather * vert * (0.075 * stain + 0.07 * smoothstep(0.8, 0.0, vWPos.y));
   }
 #endif
 #ifdef USE_PAINT
@@ -291,6 +337,14 @@ const FRAG_AO = /* glsl */ `
   reflectedLight.indirectDiffuse *= _ao;
   reflectedLight.indirectSpecular *= _ao;
   reflectedLight.directDiffuse *= mix(1.0, _ao, 0.35);
+  #ifdef USE_CLOUD_SHADOW
+    // projection le long de la direction du soleil sur le plan du sol
+    vec2 cpos = vWPos.xz - uSunDir.xz / max(uSunDir.y, 0.08) * vWPos.y;
+    float cn = texture2D(tCloudNoise, cpos * uCloudShadow.x + uCloudShadow.yz * uTime).r;
+    float cshadow = 1.0 - uCloudShadow.w * smoothstep(0.46, 0.66, cn);
+    reflectedLight.directDiffuse *= cshadow;
+    reflectedLight.directSpecular *= cshadow;
+  #endif
 }
 `;
 
@@ -312,6 +366,9 @@ export function extendSurface<T extends THREE.MeshStandardMaterial>(mat: T, o: S
   if (o.paint) defines.USE_PAINT = '';
   if (o.contactAO) defines.USE_CONTACT_AO = '';
   if (o.topAO) defines.USE_TOP_AO = '';
+  if (o.cloudShadow) defines.USE_CLOUD_SHADOW = '';
+  if (o.courses) defines.USE_COURSES = '';
+  if (o.weathering && o.textures) defines.USE_WEATHER = '';
   const key = 'surf:' + Object.keys(defines).sort().join(',');
   mat.customProgramCacheKey = () => key;
   mat.onBeforeCompile = (shader) => {
@@ -331,6 +388,14 @@ export function extendSurface<T extends THREE.MeshStandardMaterial>(mat: T, o: S
     if (o.paint) Object.assign(u, o.paint.uniforms);
     if (o.contactAO) u.uContactAO = { value: new THREE.Vector3(o.contactAO.y, o.contactAO.height, o.contactAO.strength) };
     if (o.topAO) Object.assign(u, o.topAO.uniforms);
+    if (o.cloudShadow) {
+      const c = o.cloudShadow;
+      u.tCloudNoise = { value: c.noise };
+      u.uCloudShadow = { value: new THREE.Vector4(c.scale, c.wind.x, c.wind.y, c.strength) };
+      u.uTime = globalUniforms.uTime;
+    }
+    if (o.courses) u.uCourses = { value: new THREE.Vector3(o.courses.h, o.courses.l, o.courses.dark) };
+    if (o.weathering) u.uWeather = { value: o.weathering };
 
     shader.vertexShader = shader.vertexShader
       .replace('#include <common>', '#include <common>\n' + VERT_DECL)

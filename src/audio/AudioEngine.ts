@@ -175,7 +175,7 @@ export class AudioEngine {
     if (!this.ctx) return;
     const t = this.ctx.currentTime;
     const curve = (v: number) => v * v;
-    this.master.gain.setTargetAtTime(curve(this.vol.master) * 0.9, t, 0.05);
+    this.master.gain.setTargetAtTime(curve(this.vol.master) * 1.3, t, 0.05);
     this.musicBus.gain.setTargetAtTime(curve(this.vol.music) * 1.1, t, 0.05);
     this.sfxBus.gain.setTargetAtTime(curve(this.vol.sfx), t, 0.05);
     this.ambBus.gain.setTargetAtTime(curve(this.vol.sfx) * 0.9, t, 0.05);
@@ -307,8 +307,16 @@ export class AudioEngine {
   update(dt: number): void {
     this.tickFallback(dt);
     if (!this.ctx || this.suspendedByApp) return;
-    this.music.tick();
+    try {
+      this.music.tick();
+    } catch (e) {
+      // Le son ne doit jamais interrompre la boucle de jeu.
+      console.error('Musique :', e);
+      this.errors.push(e instanceof Error ? e.message : String(e));
+    }
   }
+
+  readonly errors: string[] = [];
 
   // ---------------------------------------------------------------- Effets
   footstep(surface: Surface, intensity: number): void {

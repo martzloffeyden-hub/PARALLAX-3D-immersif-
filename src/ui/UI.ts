@@ -148,8 +148,15 @@ export class UI {
       <div class="top mono"><span>Une expérience en trois points de vue</span><span>N° 01 — MMXXVI</span></div>
       <div class="tagline">Le monde n’existe que sous un certain angle.</div>
       <nav class="menu"></nav>
-      <div class="foot mono">Casque recommandé<br/>Plein écran — F11</div>
+      <div class="foot mono">Casque recommandé<br/><button class="fs mono">Plein écran</button></div>
     </div>`);
+
+    const fs = $(this.title, '.fs');
+    this.button(fs, () => {
+      if (document.fullscreenElement) document.exitFullscreen().catch(() => undefined);
+      else document.documentElement.requestFullscreen?.().catch(() => undefined);
+    });
+    document.addEventListener('fullscreenchange', () => (fs.textContent = document.fullscreenElement ? 'Quitter le plein écran' : 'Plein écran'));
 
     this.hud = this.el(`<div id="hud" class="layer fade">
       <svg id="reticle" viewBox="-32 -32 64 64">
@@ -195,19 +202,21 @@ export class UI {
     });
 
     this.credits = this.el(`<div id="credits" class="layer fade">
-      <div class="t">PARALLAX</div>
-      <div class="s">Vous avez trouvé le point de vue. Le monde est entier.</div>
-      <div class="roll mono">
-        <div><b>Conception, direction artistique, code, image et son</b></div>
-        <div>Claude — Anthropic</div>
-        <div style="margin-top:14px">Three.js · Web Audio API · polices Cormorant Garamond & IBM Plex Mono (SIL OFL)</div>
-        <div>Aucune ressource externe — tout est généré en temps réel</div>
+      <div class="top">
+        <div class="t">PARALLAX</div>
+        <div class="s">Vous avez trouvé le point de vue. Le monde est entier.</div>
       </div>
-      <nav class="menu">
-        <button class="item" data-a="free">Exploration libre</button>
-        <button class="item" data-a="replay">Rejouer</button>
-        <button class="item" data-a="menu">Menu principal</button>
-      </nav>
+      <div class="bottom">
+        <div class="roll mono">
+          <div><b>Conception, direction artistique, code, image et son</b> — Claude (Anthropic)</div>
+          <div>Three.js · Web Audio API · Cormorant Garamond & IBM Plex Mono (SIL OFL) · aucune ressource externe, tout est généré en temps réel</div>
+        </div>
+        <nav class="menu">
+          <button class="item" data-a="free">Exploration libre</button>
+          <button class="item" data-a="replay">Rejouer</button>
+          <button class="item" data-a="menu">Menu principal</button>
+        </nav>
+      </div>
     </div>`);
     this.credits.querySelectorAll<HTMLElement>('[data-a]').forEach((b) => {
       const a = b.dataset.a;

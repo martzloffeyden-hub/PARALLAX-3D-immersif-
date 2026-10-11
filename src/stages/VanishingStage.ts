@@ -1,5 +1,4 @@
 import * as THREE from 'three';
-import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { Stage, type StageContext, type StageHost } from './Stage';
 import { Atmosphere, hdr, ATMOSPHERE_PARS, type AtmosphereParams } from '../render/Atmosphere';
 import { Sky } from '../world/Sky';
@@ -215,7 +214,8 @@ export class VanishingStage extends Stage {
       stoneScale: 1.2,
       variation: 0.12,
     });
-    const shardGeo = new RoundedBoxGeometry(1, 1, 1, 1, 0.12);
+    // Géométrie simple : à 500 m, les biseaux sont invisibles (12 triangles par éclat).
+    const shardGeo = new THREE.BoxGeometry(1, 1, 1);
     const makeRing = (seed: number, count: number) => {
       const rng = new Rng(seed);
       const im = new THREE.InstancedMesh(shardGeo, this.ringMat, count);
@@ -378,8 +378,6 @@ export class VanishingStage extends Stage {
     const beat = audio.ready ? audio.music.beat : 60 / 92;
     const eye = new THREE.Vector3(0, 1.62, END_Z);
     const focus = new THREE.Vector3(0, WATER_Y + 1.62, RING_CENTER.z);
-    const high = new THREE.Vector3(0, 24, END_Z + 46);
-    const highLook = new THREE.Vector3(0, 6, RING_CENTER.z);
     const conv0 = this.converge;
     const night = this.nightP;
     const dawn = this.dawnP;
@@ -389,20 +387,28 @@ export class VanishingStage extends Stage {
 
     // Horloge du finale : temps audio si disponible (synchronisation exacte).
     const clock = () => (audio.ready && t0 > 0 ? (audio.now() - t0) / beat : seq.t / beat);
-    host.director.play((t, out) => {
+    // Plan du finale : poussée sur l'emblème qui se forme, puis grue arrière le long de la
+    // chaussée (les obélisques s'embrasent en entrant dans le cadre), enfin un plan fixe
+    // en perspective centrale : l'anneau et son reflet composent l'emblème.
+    const back = new THREE.Vector3(0, 8.5, -38);
+    const backLook = new THREE.Vector3(0, 3.5, RING_CENTER.z);
+    const close = new THREE.Vector3(0, 2.4, END_Z + 1.5);
+    const tmpP = new THREE.Vector3();
+    const tmpL = new THREE.Vector3();
+    host.director.play((_t, out) => {
       const bt = clock();
-      const k1 = ease.inOutCubic(clamp(bt / 14));
-      const k2 = ease.inOutCubic(clamp((bt - 10) / 22));
-      const drift = Math.max(0, bt - 32) * 0.012;
-      const p = new THREE.Vector3().lerpVectors(eye, new THREE.Vector3(0, 3.2, END_Z + 9), k1);
-      p.lerp(high, k2);
-      p.z -= drift * 6;
-      out.pos.copy(p);
-      const look = new THREE.Vector3().lerpVectors(focus, highLook, k2);
-      lookQuat(out.quat, out.pos, look);
-      out.fov = lerp(72, 52, ease.inOutQuad(clamp((bt - 6) / 26)));
-      void t;
+      const k1 = ease.inOutSine(clamp(bt / 6));
+      const k2 = ease.inOutCubic(clamp((bt - 6) / 24));
+      const drift = Math.max(0, bt - 30);
+      tmpP.lerpVectors(eye, close, k1).lerp(back, k2);
+      tmpP.y += drift * 0.02;
+      out.pos.copy(tmpP);
+      cameraZ = tmpP.z;
+      tmpL.lerpVectors(focus, backLook, k2);
+      lookQuat(out.quat, out.pos, tmpL);
+      out.fov = lerp(lerp(72, 62, k1), 50, k2) - drift * 0.05;
     }, 0.6);
+    let cameraZ = eye.z;
 
     const seq = new Sequence();
     seq.at(0, () => {
@@ -412,27 +418,33 @@ export class VanishingStage extends Stage {
     // 0 → 4 temps : les deux anneaux fusionnent.
     seq.span(0, beat * 4, (k) => (this.converge = lerp(conv0, 1, ease.outCubic(k))));
     // L'aube remonte la chaussée : les obélisques s'embrasent en rythme, du plus lointain au plus proche.
-    OBELISK_Z.slice()
-      .reverse()
-      .forEach((_, j) => {
-        const i = OBELISK_Z.length - 1 - j;
-        seq.at(beat * (2 + j * 1.5), () => {
+    // L'aube remonte la chaussée : chaque paire d'obélisques s'embrase quand la caméra l'atteint.
+    seq.span(0, beat * 34, () => {
+      OBELISK_Z.forEach((z, i) => {
+        if (this.slitTarget[i * 2] < 1 && cameraZ > z - 7) {
           this.slitTarget[i * 2] = this.slitTarget[i * 2 + 1] = 1;
-          this.slitGlow[i * 2] = this.slitGlow[i * 2 + 1] = 1.3;
-        });
+          this.slitGlow[i * 2] = this.slitGlow[i * 2 + 1] = 1.6;
+          if (audio.ready) audio.inst.bell(midi(81 + (i % 3) * 2), audio.now(), { gain: 0.03, ratio: 2, index: 0.4, decay: 3, pan: 0 });
+        }
       });
+    });
+    seq.at(beat * 31, () => {
+      for (let i = 0; i < this.slitTarget.length; i++) this.slitTarget[i] = 1;
+    });
     seq.span(beat * 2, beat * 34, (k) => {
       const e = ease.inOutSine(k);
       this.atmosphere.blend(night, dawn, e);
       this.sky.uniforms.uStars.value = lerp(1.4, 0.05, ease.inQuad(k));
       this.sky.uniforms.uGalaxy.value = lerp(1.0, 0, k);
-      this.sky.uniforms.uSunDisk.value = lerp(560, 70, e);
-      this.sunScale = lerp(1, 18, ease.inOutCubic(k));
+      this.sky.uniforms.uSunDisk.value = lerp(560, 34, e);
+      this.sunScale = lerp(1, 8, ease.inOutCubic(k));
       this.sun.intensity = lerp(sunI0, 2.6, e);
       this.sun.color.lerpColors(hdr(0x9fb4e8, 1), hdr(0xffc890, 1), e);
       this.scene.environmentIntensity = lerp(0.35, 1.0, e);
-      g.exposure = lerp(ex0, 0.92, e);
-      this.ringMat.emissive.setRGB(1, 0.62, 0.34).multiplyScalar(0.2 + 0.25 * e);
+      g.exposure = lerp(ex0, 0.95, e);
+      g.saturation = lerp(1.0, 1.12, e);
+      g.gain.setRGB(lerp(1.0, 1.04, e), 1.0, lerp(1.04, 0.97, e));
+      this.ringMat.emissive.setRGB(1, 0.62, 0.34).multiplyScalar(0.2 + 0.7 * e);
       this.ringMat.emissiveIntensity = 1;
       (this.water.material.uniforms.uDeep.value as THREE.Color).lerpColors(hdr(0x02040a, 0.4), hdr(0x1a1824, 0.5), e);
     });
@@ -442,7 +454,7 @@ export class VanishingStage extends Stage {
       host.shake(0.3, 1.5);
       this.ringMat.emissive.setRGB(1, 0.7, 0.45).multiplyScalar(1.4);
     });
-    seq.span(beat * 32, beat * 40, (k) => this.ringMat.emissive.setRGB(1, 0.7, 0.45).multiplyScalar(lerp(1.4, 0.35, ease.outCubic(k))));
+    seq.span(beat * 32, beat * 40, (k) => this.ringMat.emissive.setRGB(1, 0.7, 0.45).multiplyScalar(lerp(1.6, 0.85, ease.outCubic(k))));
     seq.at(beat * 38, () => {
       this.phase = 'end';
       host.finish();

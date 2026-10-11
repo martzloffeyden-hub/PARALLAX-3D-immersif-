@@ -73,6 +73,7 @@ export class ArchipelagoStage extends Stage {
   private wallHinted = false;
   private everOnWall = false;
   private gateHum: import('../audio/AudioEngine').LoopHandle | null = null;
+  private skyFill!: THREE.HemisphereLight;
 
   build(ctx: StageContext): void {
     this.ctx = ctx;
@@ -134,6 +135,8 @@ export class ArchipelagoStage extends Stage {
       bump: 0.01,
       roughVar: 0.22,
       contactAO: { y: 0, height: 1.4, strength: 0.4 },
+      slabs: { sx: 3.0, sz: 2.0, seam: 0.012, seamDark: 0.3, tileVar: 0.06 },
+      weathering: 0.8,
     });
     const under = extendSurface(new THREE.MeshStandardMaterial({ color: 0xa89a88, roughness: 0.9, vertexColors: true }), {
       atmosphere: atm,
@@ -149,7 +152,17 @@ export class ArchipelagoStage extends Stage {
     this.lanternMat = new THREE.MeshStandardMaterial({ color: 0xffc890, emissive: 0xff9a50, emissiveIntensity: 3.0, roughness: 0.4 });
     extendSurface(this.lanternMat, { atmosphere: atm });
     const bronze = extendSurface(new THREE.MeshStandardMaterial({ color: 0xa47a4a, roughness: 0.3, metalness: 1, vertexColors: true }), { atmosphere: atm });
-    const mats = { stone, under, verm, lantern: this.lanternMat, bronze };
+    const mono = extendSurface(new THREE.MeshStandardMaterial({ color: 0xd2c6b2, roughness: 0.84, vertexColors: true }), {
+      atmosphere: atm,
+      textures: tex,
+      stoneScale: 0.35,
+      variation: 0.16,
+      bump: 0.01,
+      roughVar: 0.2,
+      courses: { h: 1.6, l: 3.4, dark: 0.32 },
+      weathering: 1,
+    });
+    const mats = { stone, under, verm, lantern: this.lanternMat, bronze, mono };
 
     const cs = this.mainFrame.colliders;
     this.mainFrame.killY = -45;
@@ -202,7 +215,7 @@ export class ArchipelagoStage extends Stage {
     lantern(2.4, 0, -46);
     lantern(-2.4, 0, -46);
     // Monolithe : 20 × 90 × 16 m
-    b.box({ x: 0, y: -40, z: -80, w: 20, h: 90, d: 16, mat: 'stone', r: 0.12 });
+    b.box({ x: 0, y: -40, z: -80, w: 20, h: 90, d: 16, mat: 'mono', r: 0.12 });
     islandBoxes.push({ min: new THREE.Vector3(-11, -40, -89), max: new THREE.Vector3(11, 56, -71) });
     // ligne vermillon au sol jusqu'à la paroi, puis le seuil de gravité
     b.box({ x: 0, y: 0, z: -56, w: 0.24, h: 0.03, d: 28, mat: 'verm', collide: false, r: 0.01 });
@@ -379,7 +392,10 @@ export class ArchipelagoStage extends Stage {
     this.setupSun(hdr(0xffa27a, 1), 2.2, new THREE.Vector3(0, 10, -45), 75, 320, q.shadowMapSize, q.shadowRadius);
     this.sun.position.copy(new THREE.Vector3(0, 10, -45)).add(new THREE.Vector3(-0.92, 0.16, -0.38).normalize().multiplyScalar(160));
     this.buildEnvironment(renderer);
-    this.scene.environmentIntensity = 1.2;
+    this.scene.environmentIntensity = 0.75;
+    // Lumière du ciel de l'heure bleue : des ombres franchement bleues, pas mauves.
+    this.skyFill = new THREE.HemisphereLight(hdr(0x5a74c0, 1), hdr(0x1a1e30, 1), 0.85);
+    this.scene.add(this.skyFill);
 
     this.motes = new Motes(atm, Math.round(500 * q.particleDensity), 30, 0.12, 0.05);
     this.scene.add(this.motes.points);
@@ -758,9 +774,11 @@ export class ArchipelagoStage extends Stage {
       (cu.uDeep.value as THREE.Color).copy(cd.deep).lerp(hdr(0x03050c, 0.15), e);
       this.sky.uniforms.uStars.value = lerp(0.25, 1.2, e);
       this.sky.uniforms.uClouds.value = lerp(0.22, 0.08, e);
-      this.sun.intensity = lerp(sunI0, 0.55, e);
+      this.sun.intensity = lerp(sunI0, 0.9, e);
       this.sun.color.copy(sunC0).lerp(hdr(0x8aa0d8, 1), e);
-      this.scene.environmentIntensity = lerp(1.2, 0.3, e);
+      this.scene.environmentIntensity = lerp(0.75, 0.4, e);
+      this.skyFill.intensity = lerp(0.85, 0.45, e);
+      this.skyFill.color.copy(hdr(0x5a74c0, 1)).lerp(hdr(0x3a4a80, 1), e);
       g.exposure = lerp(ex0, 1.25, e);
     });
     seq.at(gateDone - 2, () => {

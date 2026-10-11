@@ -161,10 +161,8 @@ export class TitleStage extends Stage {
       variation: 0.1,
     });
     const monos: [number, number, number, number, number, number][] = [
-      [-95, -40, -210, 16, 120, 16],
-      [70, -50, -260, 22, 140, 22],
-      [140, -30, -180, 10, 70, 10],
-      [-170, -60, -320, 30, 160, 30],
+      [-240, -60, -520, 18, 210, 18],
+      [260, -80, -600, 26, 240, 26],
     ];
     for (const [mx, my, mz, w, h, d] of monos) {
       const mm = new THREE.Mesh(monoGeo, monoMat);

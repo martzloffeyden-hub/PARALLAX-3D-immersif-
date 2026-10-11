@@ -55,7 +55,8 @@ void main() {
             + texture2D(tNoise, p * 0.27 - wind * 1.7).g * 0.3
             + texture2D(tNoise, p * 0.71 + wind * 2.3).r * 0.15;
     float stretch = texture2D(tNoise, p * 0.035 + vec2(0.3, 0.7)).a;
-    float d = smoothstep(1.0 - uClouds, 1.0 - uClouds + 0.35, n * (0.75 + stretch * 0.5));
+    float th = 0.64 - uClouds * 0.36;
+    float d = smoothstep(th, th + 0.22, n * (0.75 + stretch * 0.5));
     d *= smoothstep(0.0, 0.18, dir.y);
     float lit = 0.55 + 0.45 * pow(max(mu, 0.0), 6.0);
     vec3 cc = uCloudColor * lit + uSunColor * 0.05 * pow(max(mu, 0.0), 24.0) * (1.0 - d) * 4.0;
@@ -74,9 +75,9 @@ void main() {
     float h = h13(cell);
     vec3 off = vec3(h13(cell + 1.7), h13(cell + 3.1), h13(cell + 5.9)) - 0.5;
     vec3 fp = fract(p) - 0.5 - off * 0.6;
-    float star = step(0.986, h) * smoothstep(0.11, 0.0, length(fp));
+    float star = step(0.979, h) * smoothstep(0.11, 0.0, length(fp));
     float tw = 0.65 + 0.35 * sin(uTime * (1.5 + h * 4.0) + h * 40.0);
-    float mag = pow((h - 0.986) / 0.014, 3.0);
+    float mag = pow(max(h - 0.979, 0.0) / 0.021, 3.0);
     vec3 sc = mix(vec3(0.75, 0.82, 1.0), vec3(1.0, 0.86, 0.7), h13(cell + 9.3));
     float hz = smoothstep(-0.02, 0.25, dir.y);
     col += sc * star * (0.4 + 3.0 * mag) * tw * uStars * hz;
@@ -84,7 +85,7 @@ void main() {
       vec3 gAxis = normalize(vec3(0.35, 0.55, -0.76));
       float band = exp(-pow(dot(dir, gAxis) * 3.2, 2.0));
       float gn = texture2D(tNoise, vec2(atan(dir.z, dir.x) * 0.6, dir.y * 1.3) * 0.7).g;
-      col += vec3(0.55, 0.6, 0.85) * band * (0.5 + gn) * uGalaxy * 0.06 * hz;
+      col += vec3(0.55, 0.6, 0.85) * band * (0.4 + gn * 1.2) * uGalaxy * 0.14 * hz;
     }
   }
   gl_FragColor = vec4(col, 1.0);

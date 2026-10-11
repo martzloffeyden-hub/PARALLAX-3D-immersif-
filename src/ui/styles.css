@@ -132,7 +132,9 @@ html, body {
   position: absolute; left: 44px; bottom: 48px;
   display: flex; flex-direction: column; gap: 4px; pointer-events: auto;
 }
-#title .foot { position: absolute; right: 44px; bottom: 48px; text-align: right; color: var(--bone-3); line-height: 2; }
+#title .foot { position: absolute; right: 44px; bottom: 48px; text-align: right; color: var(--bone-3); line-height: 2; pointer-events: auto; }
+#title .foot .fs { appearance: none; background: none; border: 0; padding: 0; color: var(--bone-2); cursor: pointer; border-bottom: 1px solid var(--line-2); }
+#title .foot .fs:hover { color: var(--bone); border-color: var(--verm); }
 
 .item {
   appearance: none; border: 0; background: none; color: var(--bone-2);
@@ -251,21 +253,21 @@ input[type='range']:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px 
 
 /* ------------------------------------------------------------ Générique */
 #credits {
-  display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 10px;
-  background: radial-gradient(ellipse 70% 60% at 50% 48%, rgba(12, 9, 8, 0.58), rgba(12, 9, 8, 0.2) 70%, rgba(12, 9, 8, 0.05));
+  display: flex; flex-direction: column; align-items: center; justify-content: space-between; text-align: center;
+  padding: 8vh 24px 6vh;
+  background: linear-gradient(to bottom, rgba(12, 9, 8, 0.5), rgba(12, 9, 8, 0) 30%, rgba(12, 9, 8, 0) 62%, rgba(12, 9, 8, 0.6));
   text-shadow: 0 2px 22px rgba(0, 0, 0, 0.45);
 }
-#credits .t { font-weight: 300; font-size: clamp(54px, 8vw, 120px); letter-spacing: 0.32em; margin-right: -0.32em; line-height: 1; }
+#credits .top, #credits .bottom { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+#credits .t { font-weight: 300; font-size: clamp(48px, 7vw, 108px); letter-spacing: 0.32em; margin-right: -0.32em; line-height: 1; }
 #credits .s { font-style: italic; font-weight: 300; font-size: clamp(18px, 1.7vw, 24px); color: var(--bone-2); }
-#credits .roll { margin-top: 34px; color: var(--bone-3); line-height: 2.4; }
+#credits .roll { color: var(--bone-3); line-height: 2.2; max-width: 980px; text-transform: none; letter-spacing: 0.12em; }
 #credits .roll b { color: var(--bone-2); font-weight: 400; }
-#credits .menu { margin-top: 38px; display: flex; gap: 34px; pointer-events: auto; }
+#credits .menu { margin-top: 18px; display: flex; gap: 34px; pointer-events: auto; flex-wrap: wrap; justify-content: center; }
 #credits .menu .item { font-size: 22px; }
-#credits > * { opacity: 0; transform: translateY(12px); transition: opacity 2000ms var(--ease), transform 2200ms var(--ease); }
-#credits.on > * { opacity: 1; transform: none; }
-#credits.on > :nth-child(2) { transition-delay: 700ms; }
-#credits.on > :nth-child(3) { transition-delay: 1600ms; }
-#credits.on > :nth-child(4) { transition-delay: 2600ms; }
+#credits .top, #credits .bottom { opacity: 0; transform: translateY(12px); transition: opacity 2200ms var(--ease), transform 2400ms var(--ease); }
+#credits.on .top, #credits.on .bottom { opacity: 1; transform: none; }
+#credits.on .bottom { transition-delay: 2200ms; }
 
 /* ------------------------------------------------------------ Erreur */
 #error { background: var(--ink); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px; text-align: center; padding: 40px; pointer-events: auto; }

@@ -43,20 +43,32 @@ export class Sequence {
       if (s.ended || this.t < s.t0) continue;
       const k = Math.min(1, (this.t - s.t0) / Math.max(1e-6, s.t1 - s.t0));
       s.started = true;
-      s.fn(k, dt);
       if (k >= 1) s.ended = true;
+      Sequence.guard(() => s.fn(k, dt));
     }
     for (const e of this.events) {
       if (!e.done && this.t >= e.t) {
         e.done = true;
-        e.fn();
+        Sequence.guard(e.fn);
       }
     }
     if (this.t >= this.end) {
       this.finished = true;
-      this.onFinish?.();
+      if (this.onFinish) Sequence.guard(this.onFinish);
     }
   }
+
+  /** Une erreur dans un effet (son, particules) ne doit jamais bloquer la progression. */
+  static guard(fn: () => void): void {
+    try {
+      fn();
+    } catch (e) {
+      console.error('Séquence :', e);
+      Sequence.errors.push(e instanceof Error ? e.message : String(e));
+    }
+  }
+
+  static errors: string[] = [];
 
   /** Termine immédiatement (exécute tout ce qui reste). */
   skipToEnd(): void {

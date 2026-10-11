@@ -65,6 +65,15 @@ const step = async (name, fn) => {
 try {
   await page.goto(base + '?dev=threshold&fixed&quality=performance', { waitUntil: 'load' });
   await waitFor((s) => s.mode === 'play' && s.frames > 5, 'démarrage');
+  if (process.env.AUDIO) {
+    // Audio réel (lancement Chromium avec lecture automatique autorisée) : exerce tous les sons.
+    await page.evaluate(async () => {
+      await window.PARALLAX.audio.init();
+      window.PARALLAX.audio.setScene('threshold');
+      window.PARALLAX.stage.begin();
+    });
+    log('audio actif :', await page.evaluate(() => window.PARALLAX.audio.ready));
+  }
   await dbg('setTimeScale', ts);
 
   await step('I — verrouillage du cercle', async () => {

@@ -212,8 +212,8 @@ export class Instruments {
     this.sends(out, 0.6);
     n.start(t, Math.random() * 3);
     n.stop(t + 0.4);
-    osc.stop(t + 1.8);
     osc.start(t);
+    osc.stop(t + 1.8);
   }
 
   /** Souffle montant (bruit filtré dont la fréquence s'élève). */
@@ -502,7 +502,7 @@ export class Instruments {
         const now = ctx.currentTime;
         const mis = Math.pow(1 - a, 1.4);
         for (const v of voices) v.o.detune.setTargetAtTime(v.off * mis, now, 0.08);
-        const g = prox * prox * (0.22 + 0.78 * a) * 0.55;
+        const g = prox * prox * (0.22 + 0.78 * a) * 0.8;
         out.gain.setTargetAtTime(g, now, 0.12);
         lp.frequency.setTargetAtTime(500 + 3500 * a * a, now, 0.1);
         const s = Math.pow(Math.max(0, a - 0.75) / 0.25, 2) * 0.05;

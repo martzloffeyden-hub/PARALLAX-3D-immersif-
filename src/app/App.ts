@@ -3,7 +3,7 @@ import { Graphics } from '../render/Graphics';
 import { createProceduralTextures, type ProceduralTextureSet } from '../render/ProceduralTextures';
 import { detectQuality } from '../render/Quality';
 import { lerpGrade } from '../render/PostFX';
-import { surfaceDetail } from '../render/Surface';
+import { surfaceDetail, globalUniforms } from '../render/Surface';
 import { Settings, Progress, type ProgressData } from './Settings';
 import { Director, makePose, type CamPose } from './Director';
 import { Player } from '../player/Player';
@@ -17,6 +17,7 @@ import { VanishingStage } from '../stages/VanishingStage';
 import type { Anamorphosis } from '../world/Anamorphosis';
 import { UI, loadFonts } from '../ui/UI';
 import { clamp, damp } from '../util/math';
+import { Sequence } from '../util/Sequence';
 
 type Mode = 'loading' | 'gate' | 'title' | 'transition' | 'play' | 'paused' | 'credits' | 'error';
 
@@ -570,6 +571,7 @@ export class App {
       }
       if (this.mode === 'error') return;
       this.time += dt;
+      globalUniforms.uTime.value = this.time;
       this.update(dt);
       this.render();
       this.graphics.adaptResolution(rawDt);
@@ -697,7 +699,7 @@ export class App {
         anam: app.stage?.anamorphoses.map((a) => ({ name: a.name, state: a.state, alignment: +a.alignment.toFixed(3), distance: +a.distance.toFixed(2) })),
         busy: app.stage?.busy,
         fade: app.graphics?.post.fade,
-        errors: app.errors.slice(),
+        errors: [...app.errors, ...Sequence.errors, ...app.audio.errors],
         frames: app.frames,
         audio: app.audio.ready,
         scale: app.graphics?.scale,
