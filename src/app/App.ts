@@ -243,7 +243,7 @@ export class App {
       }
     });
     window.addEventListener('keydown', (e) => {
-      if (e.code === 'Escape' && this.mode === 'paused' && this.ui.panelOpen) this.ui.closePanels();
+      if (e.code === 'Escape' && this.ui.panelOpen && this.mode !== 'play') this.ui.closePanels();
       if (e.code === 'KeyP' && this.mode === 'play') this.pause();
     });
     this.graphics.canvas.addEventListener('click', () => {
@@ -254,7 +254,12 @@ export class App {
         this.title.setMouse((e.clientX / window.innerWidth) * 2 - 1, (e.clientY / window.innerHeight) * 2 - 1);
       }
     });
-    this.settings.onChange(() => this.applySettings());
+    this.settings.onChange(() => {
+      this.applySettings();
+      this.paintedPaused = false;
+    });
+    // Un redimensionnement efface le canevas : l'image figée de la pause doit être redessinée.
+    window.addEventListener('resize', () => (this.paintedPaused = false));
   }
 
   private applySettings(): void {

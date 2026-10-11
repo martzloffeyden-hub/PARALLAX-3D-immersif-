@@ -227,7 +227,8 @@ export class ThresholdStage extends Stage {
     disc.dispose();
 
     // --- Grande Porte (nord)
-    b.archWall({ x: 0, y: 0, z: -58, w: 40, h: 34, d: 3.6, openings: [{ cx: 0, width: 14, spring: 13 }], mat: 'stone' });
+    // L'ouverture est concentrique à l'anneau-portail : il s'y inscrit comme une porte de lune.
+    b.archWall({ x: 0, y: 0, z: -58, w: 40, h: 34, d: 3.6, openings: [{ cx: 0, width: (GATE_PORTAL_R + 0.45) * 2, spring: GATE_PORTAL_POS.y }], mat: 'stone' });
     b.box({ x: 0, y: 0, z: -58, w: 44, h: 0.32, d: 7, mat: 'stone', r: 0.05 });
     b.box({ x: 0, y: 34, z: -58, w: 41, h: 1.2, d: 4.6, mat: 'stone', r: 0.08, collide: false });
 

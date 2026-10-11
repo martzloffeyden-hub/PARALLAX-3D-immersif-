@@ -235,7 +235,7 @@ export class TitleStage extends Stage {
     // Apparition : la caméra glisse jusqu'au point de vue exact (le mot se forme).
     const k = ease.inOutCubic(clamp((t - 0.4) / 5.2));
     const drift = new THREE.Vector3(Math.sin(t * 0.21) * 0.35, Math.sin(t * 0.17 + 1) * 0.2, 0);
-    const target = new THREE.Vector3(this.mouse.x * 1.6, -this.mouse.y * 0.9, 0).add(drift);
+    const target = new THREE.Vector3(this.mouse.x * 1.1, -this.mouse.y * 0.6, 0).add(drift);
     const intro = new THREE.Vector3(7, 2.5, 4).multiplyScalar(1 - k);
     target.add(intro);
     this.offset.x = damp(this.offset.x, target.x, 2.2, dt);

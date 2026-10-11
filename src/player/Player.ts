@@ -57,6 +57,8 @@ interface FrameShift {
   dur: number;
   fromPos: THREE.Vector3;
   fromQuat: THREE.Quaternion;
+  /** Décalage monde maximal à mi-parcours (la caméra s'écarte pour que la bascule se lise). */
+  arc: THREE.Vector3 | null;
   done?: () => void;
 }
 
@@ -167,7 +169,7 @@ export class Player {
    * Bascule vers un autre référentiel de gravité. La caméra interpole
    * son orientation monde de l'ancienne vers la nouvelle.
    */
-  shiftFrame(frame: GravityFrame, x: number, y: number, z: number, yaw: number, pitch: number, dur: number, done?: () => void): void {
+  shiftFrame(frame: GravityFrame, x: number, y: number, z: number, yaw: number, pitch: number, dur: number, done?: () => void, arc?: THREE.Vector3): void {
     const fromPos = new THREE.Vector3();
     const fromQuat = new THREE.Quaternion();
     this.computeWorldPose(fromPos, fromQuat);
@@ -178,7 +180,7 @@ export class Player {
     this.pitch = pitch;
     this.eyeY = y + this.eyeHeight;
     this.glide = null;
-    this.shift = { t: 0, dur, fromPos, fromQuat, done };
+    this.shift = { t: 0, dur, fromPos, fromQuat, arc: arc ? arc.clone() : null, done };
     this.snapToGround();
   }
 
@@ -371,8 +373,10 @@ export class Player {
     this.frame.quaternion(_q);
     outQuat.premultiply(_q);
     if (this.shift) {
-      const k = ease.inOutCubic(clamp(this.shift.t / this.shift.dur));
+      const raw = clamp(this.shift.t / this.shift.dur);
+      const k = ease.inOutCubic(raw);
       outPos.lerpVectors(this.shift.fromPos, _v.copy(outPos), k);
+      if (this.shift.arc) outPos.addScaledVector(this.shift.arc, Math.sin(Math.PI * ease.inOutSine(raw)));
       _q2.copy(this.shift.fromQuat).slerp(outQuat, k);
       outQuat.copy(_q2);
     }

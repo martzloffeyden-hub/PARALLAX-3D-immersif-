@@ -5,7 +5,7 @@ const out = process.argv[2] || 'tests/output/finale';
 mkdirSync(out, { recursive: true });
 const exe = process.env.CHROME || '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
 const base = process.env.BASE || 'http://localhost:4173/PARALLAX.html';
-const browser = await chromium.launch({ executablePath: exe, args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--autoplay-policy=no-user-gesture-required'] });
+const browser = await chromium.launch({ executablePath: exe, args: [...(process.env.GPU ? [] : ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist']), '--autoplay-policy=no-user-gesture-required'] });
 const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
 await page.goto(`${base}?dev=vanishing&fixed&nohud&quality=${process.env.Q || 'balanced'}&cam=0,0,-100,0,2`);
 await page.waitForFunction(() => window.PARALLAX?.debug?.state().mode === 'play', null, { timeout: 240000 });

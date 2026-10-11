@@ -35,7 +35,7 @@ void main() {
   vec3 V = normalize(cameraPosition - vWPos);
   float ndv = abs(dot(normalize(vN), V));
   // cœur blanc-chaud au centre du tube, vermillon sur les bords
-  vec3 core = mix(uColor, vec3(1.0, 0.86, 0.72), pow(ndv, 3.0) * 0.6);
+  vec3 core = mix(uColor, vec3(1.0, 0.7, 0.5), pow(ndv, 4.0) * 0.45);
   float pulse = 1.0 + 0.06 * sin(uTime * 2.3 + ang * 18.0);
   vec3 col = core * uGlow * pulse * (0.55 + 0.45 * ndv);
   // front de révélation lumineux
@@ -69,8 +69,8 @@ export class Emblem {
         uniforms: {
           ...atm.uniforms,
           uReveal: { value: 1 },
-          uColor: { value: new THREE.Color(1.0, 0.24, 0.12) },
-          uGlow: { value: 3.2 },
+          uColor: { value: new THREE.Color(1.0, 0.2, 0.09) },
+          uGlow: { value: 2.0 },
           uOpacity: { value: 1 },
           uTime: { value: 0 },
           uRefAngle: { value: 0 },

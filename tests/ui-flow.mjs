@@ -8,7 +8,7 @@ const out = process.argv[2] || 'tests/output/ui';
 mkdirSync(out, { recursive: true });
 const exe = process.env.CHROME || '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
 const url = process.env.URL || 'http://localhost:4173/PARALLAX.html';
-const browser = await chromium.launch({ executablePath: exe, args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
+const browser = await chromium.launch({ executablePath: exe, args: [...(process.env.GPU ? [] : ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'])] });
 const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
 const logs = [];
 page.on('console', (m) => {

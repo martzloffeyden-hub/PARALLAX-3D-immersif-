@@ -2,7 +2,7 @@
 import { chromium } from 'playwright-core';
 const [, , query = '', out = 'shot.png', frames = '30', w = '1280', h = '720'] = process.argv;
 const exe = process.env.CHROME || '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
-const browser = await chromium.launch({ executablePath: exe, args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
+const browser = await chromium.launch({ executablePath: exe, args: [...(process.env.GPU ? [] : ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'])] });
 const page = await browser.newPage({ viewport: { width: +w, height: +h } });
 const logs = [];
 page.on('console', (m) => { if (m.type() === 'error' || m.type() === 'warning') logs.push(`[${m.type()}] ${m.text()}`); });

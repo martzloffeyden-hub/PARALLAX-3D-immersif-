@@ -250,7 +250,7 @@ export class VanishingStage extends Stage {
     this.arrivalRing = new Emblem(atm, GATE_PORTAL_R, 0.47, 1, 0.01, GATE_PORTAL_R + 0.25, 0.1);
     this.arrivalRing.inner.visible = false;
     this.arrivalRing.reveal = 0;
-    this.arrivalRing.glow = 2.2;
+    this.arrivalRing.glow = 1.8;
     this.arrivalRing.group.position.copy(this.arrival.pos);
     this.root.add(this.arrivalRing.group);
 

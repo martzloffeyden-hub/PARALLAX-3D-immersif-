@@ -6,7 +6,7 @@ const exe = process.env.CHROME || '/opt/pw-browsers/chromium-1194/chrome-linux/c
 const base = process.env.BASE || 'http://localhost:4173/PARALLAX.html';
 const browser = await chromium.launch({
   executablePath: exe,
-  args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--autoplay-policy=no-user-gesture-required'],
+  args: [...(process.env.GPU ? [] : ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist']), '--autoplay-policy=no-user-gesture-required'],
 });
 const page = await browser.newPage({ viewport: { width: 640, height: 360 } });
 const errs = [];

@@ -8,7 +8,7 @@ const ts = Number(process.argv[3] || 3);
 mkdirSync(out, { recursive: true });
 const exe = process.env.CHROME || '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
 const base = process.env.BASE || 'http://localhost:5173/';
-const browser = await chromium.launch({ executablePath: exe, args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--autoplay-policy=no-user-gesture-required'] });
+const browser = await chromium.launch({ executablePath: exe, args: [...(process.env.GPU ? [] : ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist']), '--autoplay-policy=no-user-gesture-required'] });
 const page = await browser.newPage({ viewport: { width: 960, height: 540 } });
 const logs = [];
 page.on('console', (m) => {
@@ -111,7 +111,7 @@ try {
   });
   await shot('05-bridge-done');
   await step('II — bascule sur la paroi', async () => {
-    await dbg('walkTo', 0, -66);
+    await dbg('walkTo', 0, -64);
     await page.evaluate(() => {
       const p = window.PARALLAX.player;
       p.yaw = 0;

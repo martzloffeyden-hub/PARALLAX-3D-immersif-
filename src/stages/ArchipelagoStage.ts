@@ -219,7 +219,9 @@ export class ArchipelagoStage extends Stage {
     islandBoxes.push({ min: new THREE.Vector3(-11, -40, -89), max: new THREE.Vector3(11, 56, -71) });
     // ligne vermillon au sol jusqu'à la paroi, puis le seuil de gravité
     b.box({ x: 0, y: 0, z: -56, w: 0.24, h: 0.03, d: 28, mat: 'verm', collide: false, r: 0.01 });
-    b.box({ x: 0, y: 0, z: -71.2, w: 7, h: 0.035, d: 1.6, mat: 'verm', collide: false, r: 0.01 });
+    b.box({ x: 0, y: 0, z: -71, w: 0.24, h: 0.03, d: 2, mat: 'verm', collide: false, r: 0.01 });
+    // seuil de gravité : à quatre mètres du pied de la paroi, pour que la bascule se lise
+    b.box({ x: 0, y: 0, z: -68.9, w: 7, h: 0.035, d: 2.2, mat: 'verm', collide: false, r: 0.01 });
     // sommet : disque de bronze du dernier point de vue, quelques volumes
     b.custom(disc, new THREE.Matrix4().makeTranslation(GATE_VIEW.x, SUMMIT_Y + 0.005, GATE_VIEW.z), 'bronze', 1);
     disc.dispose();
@@ -229,7 +231,7 @@ export class ArchipelagoStage extends Stage {
     lantern(8.8, SUMMIT_Y, -74, 1.6);
 
     // --- Lointains : architecture impossible
-    b.box({ x: -260, y: -60, z: -420, w: 60, h: 260, d: 60, mat: 'under', collide: false, r: 0.5 });
+    b.box({ x: -430, y: -60, z: -250, w: 60, h: 260, d: 60, mat: 'under', collide: false, r: 0.5 });
     b.box({ x: 320, y: -60, z: -300, w: 40, h: 180, d: 40, mat: 'under', collide: false, r: 0.5 });
     for (const [x, z, w] of [
       [-140, -160, 18],
@@ -379,7 +381,7 @@ export class ArchipelagoStage extends Stage {
     this.ring = new Emblem(atm, PORTAL_R, 0.47, 1, 0.01, PORTAL_R + 0.25, 0.1);
     this.ring.inner.visible = false;
     this.ring.reveal = 0;
-    this.ring.glow = 2.4;
+    this.ring.glow = 1.8;
     this.ring.group.position.copy(ARRIVAL);
     this.root.add(this.ring.group);
     this.backPortal = new Portal(PORTAL_R, ctx.graphics.hdrType);
@@ -547,9 +549,9 @@ export class ArchipelagoStage extends Stage {
     const pos = p.pos;
     if (p.frame === this.mainFrame) {
       // île B → paroi
-      if (pos.z < -70.4 && Math.abs(pos.x) < 9.5 && pos.y < 0.5 && pos.y > -0.5) {
+      if (pos.z < -67.8 && Math.abs(pos.x) < 9.5 && pos.y < 0.5 && pos.y > -0.5) {
         fx();
-        p.shiftFrame(this.wallFrame, clamp(pos.x, -9, 9), 0, -1.0, 0, 0.05, 1.7);
+        p.shiftFrame(this.wallFrame, clamp(pos.x, -9, 9), 0, -1.2, 0, 0.08, 2.6, undefined, new THREE.Vector3(0, 7, 16));
         this.everOnWall = true;
         if (!this.wallHinted) {
           this.wallHinted = true;
@@ -559,13 +561,13 @@ export class ArchipelagoStage extends Stage {
       // sommet → paroi (redescendre)
       if (pos.y > SUMMIT_Y - 1 && pos.z > -72.5 && Math.abs(pos.x) < 9.5) {
         fx();
-        p.shiftFrame(this.wallFrame, clamp(pos.x, -9, 9), 0, -48.0, Math.PI, 0, 1.7);
+        p.shiftFrame(this.wallFrame, clamp(pos.x, -9, 9), 0, -48.0, Math.PI, 0, 2.0, undefined, new THREE.Vector3(0, 6, 6));
       }
     } else if (p.frame === this.wallFrame) {
       // paroi → sommet
       if (pos.z < -48.7) {
         fx();
-        p.shiftFrame(this.mainFrame, clamp(pos.x, -9, 9), SUMMIT_Y, -73.6, 0, -0.05, 1.7);
+        p.shiftFrame(this.mainFrame, clamp(pos.x, -9, 9), SUMMIT_Y, -73.6, 0, -0.05, 2.4, undefined, new THREE.Vector3(0, 9, 9));
         if (this.phase === 'island') {
           this.phase = 'summit';
           this.phaseTime = 0;
@@ -574,7 +576,7 @@ export class ArchipelagoStage extends Stage {
       // paroi → île B
       if (pos.z > 0.25) {
         fx();
-        p.shiftFrame(this.mainFrame, clamp(pos.x, -9, 9), 0, -70.0, Math.PI, 0, 1.7);
+        p.shiftFrame(this.mainFrame, clamp(pos.x, -9, 9), 0, -67.0, Math.PI, 0, 2.0, undefined, new THREE.Vector3(0, 5, 8));
       }
     }
   }

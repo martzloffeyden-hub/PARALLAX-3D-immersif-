@@ -31,7 +31,7 @@ const VIEWS = [
   ['a3-back', 'vanishing', 0, 0, -100, 160, 2],
 ];
 
-const browser = await chromium.launch({ executablePath: exe, args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
+const browser = await chromium.launch({ executablePath: exe, args: [...(process.env.GPU ? [] : ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'])] });
 const page = await browser.newPage({ viewport: { width: W, height: H } });
 const errs = [];
 page.on('pageerror', (e) => errs.push(e.message));
